@@ -3,25 +3,25 @@ local keyOptions = {}
 local sortedKeys = {}
 local drawString = {}
 local showText = false
+QBCore = exports['qb-core']:GetCoreObject()
 
-AddEventHandler("npcCreation")
-RegisterNetEvent("npcCreation", function()
+RegisterCommand("npc", function()
     lib.registerContext({
         id = 'npc_create',
-        title = 'NPC Creator made by WhereiamL',
+        title = 'Criador de NPC',
         options = {
             {
-                title = 'Create new NPC',
+                title = 'Criar novo NPC',
                 icon = 'hand',
-                description = 'Creates a new NPC',
+                description = 'Cria um novo NPC',
                 onSelect = function()
                     TriggerEvent("npcCreationMenu")
                 end,
             },
             {
-                title = 'Teleport to NPC',
+                title = 'Teleportar ao NPC',
                 icon = 'hand',
-                description = "Teleport to your existing NPCs",
+                description = "Teleporta até os seus NPCs",
                 onSelect = function()
                     local locations = lib.callback.await('npcGetAll', false)
                     local options = {}
@@ -29,12 +29,12 @@ RegisterNetEvent("npcCreation", function()
                         options[#options + 1] = {
                             title = locations[i].name,
                             icon = 'marker',
-                            description = 'Click to teleport',
+                            description = 'Clique para teleportar',
                             onSelect = function()
                                SetEntityCoords(cache.ped, locations[i].coords.x, locations[i].coords.y, locations[i].coords.z)
                                lib.notify({
-                                    title = 'Teleport',
-                                    description = 'Teleported to ' .. locations[i].name,
+                                    title = 'Teleportar',
+                                    description = 'Teleportado para ' .. locations[i].name,
                                     type = 'success'
                                 })
                             end,
@@ -42,7 +42,7 @@ RegisterNetEvent("npcCreation", function()
                     end
                     lib.registerContext({
                         id = 'npc_teleport',
-                        title = 'Teleport to a desired NPC',
+                        title = 'Teleportar ao NPC desejado',
                         options = options
                     })
                     lib.showContext('npc_teleport')
@@ -50,9 +50,9 @@ RegisterNetEvent("npcCreation", function()
             },
             
             {
-                title = 'Delete existing NPC',
+                title = 'Deletar um NPC existente',
                 icon = 'trash',
-                description = "Deletes an existing NPC you created",
+                description = "Deleta um NPC que foi criado",
                 onSelect = function()
                     local npc = lib.callback.await('npcGetAll', false)
                     local options = {}
@@ -60,19 +60,19 @@ RegisterNetEvent("npcCreation", function()
                         options[#options + 1] = {
                             title = npc[i].name,
                             icon = 'trash',
-                            description = 'Click to delete',
+                            description = 'Clique para Deletar',
                             onSelect = function()
                                 local deleted = TriggerServerEvent("npcDelete", npc[i].name)
                                 if not deleted then
                                     lib.notify({
-                                        title = 'NPC Creator',
-                                        description = 'NPC deleted successfully',
+                                        title = 'Criador de NPC',
+                                        description = 'NPC deletado com sucesso',
                                         type = 'success'
                                     })
                                 else
                                     lib.notify({
-                                        title = 'NPC Creator',
-                                        description = 'The deletion failed',
+                                        title = 'Criador de NPC',
+                                        description = 'Não foi possível deletar esse NPC',
                                         type = 'error'
                                     })
                                 end
@@ -81,7 +81,7 @@ RegisterNetEvent("npcCreation", function()
                     end
                     lib.registerContext({
                         id = 'npc_delete',
-                        title = 'Delete an existing NPC',
+                        title = 'Deleta um NPC',
                         options = options
                     })
                     lib.showContext('npc_delete')
@@ -102,21 +102,24 @@ AddEventHandler("npcCreationMenu", function()
         table.insert(keyOptions, { value = tostring(code), label = key })
     end
 
-    local input = lib.inputDialog('WhereiamL NPC Creator', {
-        {type = 'input', label = 'Name of the NPC', required = true}, --1
-        {type = 'input', label = 'NPC Hash', description = 'Enter the hash of the NPC model.', required = true},--2
-        {type = 'input', label = 'Event', description = 'The event triggered after interacting with the NPC.'},--3
-        {type = 'input', placeholder = 'animDict', description = 'The animation dictionary for the NPC.'},--4
-        {type = 'input', placeholder = 'animName', description = 'The animation name for the NPC.'},--5
-        {type = 'checkbox', label = 'Use ox_target', description = 'Enable advanced interaction options with ox_target.'},--6
-        {type = 'checkbox', label = 'Use Drawtext', description = 'Display text above the NPC using drawText.'},--7
-        {type = 'input', placeholder = 'Job group', description = 'Specify the job group to restrict interaction. Leave blank for unrestricted access.'},--8
-        {type = 'input', label = 'Grade', description = 'Specify the required grade for the job group.'},--9
-        {type = 'textarea', label = 'Label', description = 'Label for ox target/drawtext.'},--10
-        {type = 'select', label = 'Menu Key', options = keyOptions, description = 'The key to open the menu if drawText is enabled, blank for default key [E]'},--11
+    local input = lib.inputDialog('Criação de NPC', {
+        {type = 'input', label = 'Nome do NPC', description = 'Utilize nomes diferentes ou não irá funcionar.', required = true}, --1
+        {type = 'input', label = 'Hash do NPC', description = 'Insira o hash do modelo do NPC.', required = true},--2
+        {type = 'input', label = 'Evento', description = 'O evento acionado após interagir com o NPC.'},--3
+        {type = 'input', placeholder = 'animDict', description = 'O dicionário de animações para o NPC.'},--4
+        {type = 'input', placeholder = 'animName', description = 'O nome da animação para o NPC.'},--5
+        {type = 'checkbox', label = 'Usar TARGET', description = 'Ativar opções avançadas de interação com ox_target.'},--6
+        {type = 'checkbox', label = 'Usar TEXTO', description = 'Exibir texto acima do NPC usando drawText.'},--7
+        {type = 'input', placeholder = 'Grupo de trabalho', description = 'Especifique o grupo de trabalho para restringir a interação. Deixe em branco para acesso irrestrito.'},--8
+        {type = 'input', label = 'Grau', description = 'Especifique o grau necessário para o grupo de trabalho.'},--9
+        {type = 'textarea', label = 'Rótulo', description = 'Rótulo para ox target/drawtext.'},--10
+        {type = 'select', label = 'Tecla de Menu', options = keyOptions, description = 'A tecla para abrir o menu se drawText estiver ativado, deixe em branco para a tecla padrão [E]'},--11
     })
     
+    
+    print("antes do input")
     if not input then return end
+    print("depois do input")
     
     local data = {
         name = input[1],
@@ -128,22 +131,27 @@ AddEventHandler("npcCreationMenu", function()
         useDrawText = input[7] and true or false,
         job = input[8] ~= "" and input[8] or false,
         grade = input[9] ~= "" and input[9] or 0,
-        oxTargetLabel = input[10] or "Label not specified",
+        oxTargetLabel = input[10] or "Sem legenda",
         drawTextKey = input[11] or "E",
     }
+    print("depois de data")
+
     TriggerEvent("control:CreateEntity", data)
+
+    print("depois de criar")
 end)    
 
-RegisterNetEvent("resourceStart")
-AddEventHandler("resourceStart", function(list)
+RegisterNetEvent("NPCresourceStart")
+AddEventHandler("NPCresourceStart", function(list)
     hasDrawText = false
     for _, npcData in ipairs(list) do
         if npcData.useDrawText then
+            print("use draw text")
             hasDrawText = true
             drawString[#drawString + 1] = { label = npcData.oxTargetLabel, hash = npcData.hash } 
         end
 
-        local npcIdentifier = npcData.hash
+        local npcIdentifier = npcData.name
         if not npcExists(npcIdentifier) then
             local modelHash = GetHashKey(npcData.hash)
             if not IsModelValid(modelHash) then
@@ -162,7 +170,9 @@ AddEventHandler("resourceStart", function(list)
             })
 
             options = {}
+            print("chegou no target", npcData.useOxTarget)
             if npcData.useOxTarget then
+                print("tentou usar oxtarget")
                 local groups = nil
                 if npcData.job then
                     options[#options +1] = {
@@ -196,7 +206,7 @@ AddEventHandler("resourceStart", function(list)
                         local controlCode = keys[npcData.drawTextKey]
                         if #(pedC - vec3(npcData.coords.x, npcData.coords.y, npcData.coords.z)) <= 10 then
                             local hasJobAndGrade = false
-                            if ESX.PlayerData.job.name == npcData.job and ESX.PlayerData.job.grade >= tonumber(npcData.grade) then       
+                            if QBX.PlayerData.job.name == npcData.job and QBX.PlayerData.job.grade >= tonumber(npcData.grade) then       
                                 hasJobAndGrade = true
                             end
 
@@ -230,9 +240,11 @@ end)
 function npcExists(npcIdentifier)
     for _, existingNpc in ipairs(npcTable) do
         if existingNpc.identifier == npcIdentifier then
+            print("NPC JA EXISTE")
             return true
         end
     end
+    print("NPC JA NAO EXISTE AINDA CRIANDO")
     return false
 end
 
