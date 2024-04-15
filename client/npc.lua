@@ -282,7 +282,7 @@ function createNPC(modelHash, coords, heading, animDict, animName, blipName, bli
 end
 
 function createPed(modelHash, coords, heading)
-    lib.requestModel(modelHash)
+    lib.requestModel(modelHash,5000)
     local npc = CreatePed(4, modelHash, coords.x, coords.y, coords.z, heading, false, true)
     if not DoesEntityExist(npc) then
         return nil
