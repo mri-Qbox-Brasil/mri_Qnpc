@@ -117,9 +117,7 @@ AddEventHandler("npcCreationMenu", function()
     })
     
     
-    print("antes do input")
     if not input then return end
-    print("depois do input")
     
     local data = {
         name = input[1],
@@ -134,11 +132,9 @@ AddEventHandler("npcCreationMenu", function()
         oxTargetLabel = input[10] or "Sem legenda",
         drawTextKey = input[11] or "E",
     }
-    print("depois de data")
 
     TriggerEvent("control:CreateEntity", data)
 
-    print("depois de criar")
 end)    
 
 RegisterNetEvent("NPCresourceStart")
@@ -146,7 +142,6 @@ AddEventHandler("NPCresourceStart", function(list)
     hasDrawText = false
     for _, npcData in ipairs(list) do
         if npcData.useDrawText then
-            print("use draw text")
             hasDrawText = true
             drawString[#drawString + 1] = { label = npcData.oxTargetLabel, hash = npcData.hash } 
         end
@@ -170,9 +165,7 @@ AddEventHandler("NPCresourceStart", function(list)
             })
 
             options = {}
-            print("chegou no target", npcData.useOxTarget)
             if npcData.useOxTarget then
-                print("tentou usar oxtarget")
                 local groups = nil
                 if npcData.job then
                     options[#options +1] = {
@@ -240,11 +233,9 @@ end)
 function npcExists(npcIdentifier)
     for _, existingNpc in ipairs(npcTable) do
         if existingNpc.identifier == npcIdentifier then
-            print("NPC JA EXISTE")
             return true
         end
     end
-    print("NPC JA NAO EXISTE AINDA CRIANDO")
     return false
 end
 

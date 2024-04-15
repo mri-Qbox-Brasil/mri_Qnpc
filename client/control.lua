@@ -64,7 +64,6 @@ function CreateNPC(model, stored)
 
             if IsControlJustPressed(0, 38) then
                 PlaceSpawnedNPC(coords, model, stored)
-                print("apertou E")
             end
         end
         Wait(0)
