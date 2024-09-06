@@ -19,6 +19,167 @@ AddEventHandler("control:CreateEntity", function(data)
     CreateNPC(data.hash, data)
 end)
 
+-- Carregar lista de animações de diferentes categorias
+local AnimationList = {
+    Emotes = require('@scully_emotemenu.data.animations.emotes'),
+    DanceEmotes = require('@scully_emotemenu.data.animations.dance_emotes'),
+    Scenarios = require('@scully_emotemenu.data.animations.scenarios'),
+    AnimalEmotes = require('@scully_emotemenu.data.animations.animal_emotes')
+}
+
+local categories = { 
+    "Emotes", 
+    "DanceEmotes", 
+    "Scenarios", 
+    "AnimalEmotes" }
+
+local currentCategoryIndex = 1
+local currentEmoteIndex = 1
+local currentPedIndex = 1
+local heading = 0
+local IsSelectingPed = false
+
+function SelectPedModelForMenu(callback)
+    IsSelectingPed = true
+
+    -- Função auxiliar para mudar o modelo de NPC
+    local function ChangeNPCModel(index)
+        local modelHash = PedModels[index][1]
+        local modelName = PedModels[index][3]
+
+        lib.requestModel(modelHash)
+
+        if DoesEntityExist(previewedNPC) then
+            DeleteEntity(previewedNPC)
+        end
+
+        -- Criação temporária do ped para pré-visualização
+        previewedNPC = CreatePed(4, modelHash, GetEntityCoords(cache.ped), heading, false, true)
+
+        SetEntityAlpha(previewedNPC, 255, false)
+        SetEntityCollision(previewedNPC, false, false)
+        FreezeEntityPosition(previewedNPC, true)
+        SetEntityInvincible(previewedNPC, true)
+        SetBlockingOfNonTemporaryEvents(previewedNPC, true)
+
+        -- Aplicar a animação ao NPC
+        local category = categories[currentCategoryIndex]
+        local selectedEmote = AnimationList[category][currentEmoteIndex]
+        exports.scully_emotemenu:playEmoteByCommand(selectedEmote.Command, nil, previewedNPC)
+
+        -- Mostrar informações na tela
+        lib.showTextUI(
+            '[E] Confirmar Modelo  \n[Q] Cancelar  \n [⬅/⮕] Girar Esquerda/Direita  \n Setas: ' .. selectedEmote.Label .. ' (' .. modelName .. ')  \n Page Up/Down: ' .. category, {
+                position = "right-center",
+            })
+    end
+
+    -- Inicializa com o primeiro ped da lista e a primeira animação na primeira categoria
+    ChangeNPCModel(currentPedIndex)
+
+    while IsSelectingPed do
+        local hit, _, coords, _, _ = lib.raycast.cam(1, 4)
+
+        if hit then
+            SetEntityCoords(previewedNPC, coords.x, coords.y, coords.z)
+            PlaceObjectOnGroundProperly(previewedNPC)
+
+            -- Girar NPC com setas laterais
+            if IsControlPressed(0, 174) then -- seta esquerda
+                heading = heading - 1.0
+                SetEntityHeading(previewedNPC, heading)
+            end
+
+            if IsControlPressed(0, 175) then -- seta direita
+                heading = heading + 1.0
+                SetEntityHeading(previewedNPC, heading)
+            end
+
+            -- Alternar entre as animações dentro da categoria com as setas para cima e para baixo
+            if IsControlJustPressed(0, 172) then -- seta para cima
+                currentEmoteIndex = currentEmoteIndex + 1
+                if currentEmoteIndex > #AnimationList[categories[currentCategoryIndex]] then
+                    currentEmoteIndex = 1
+                end
+                exports.scully_emotemenu:playEmoteByCommand(AnimationList[categories[currentCategoryIndex]][currentEmoteIndex].Command, nil, previewedNPC)
+                ChangeNPCModel(currentPedIndex)  -- Atualiza o texto da animação na tela
+            end
+
+            if IsControlJustPressed(0, 173) then -- seta para baixo
+                currentEmoteIndex = currentEmoteIndex - 1
+                if currentEmoteIndex < 1 then
+                    currentEmoteIndex = #AnimationList[categories[currentCategoryIndex]]
+                end
+                exports.scully_emotemenu:playEmoteByCommand(AnimationList[categories[currentCategoryIndex]][currentEmoteIndex].Command, nil, previewedNPC)
+                ChangeNPCModel(currentPedIndex)  -- Atualiza o texto da animação na tela
+            end
+
+            -- Alternar entre categorias usando Page Up e Page Down
+            if IsControlJustPressed(0, 10) then -- Page Up
+                currentCategoryIndex = currentCategoryIndex + 1
+                if currentCategoryIndex > #categories then
+                    currentCategoryIndex = 1
+                end
+                currentEmoteIndex = 1  -- Reseta o índice de animação ao trocar de categoria
+                exports.scully_emotemenu:playEmoteByCommand(AnimationList[categories[currentCategoryIndex]][currentEmoteIndex].Command, nil, previewedNPC)
+                ChangeNPCModel(currentPedIndex)
+            end
+
+            if IsControlJustPressed(0, 11) then -- Page Down
+                currentCategoryIndex = currentCategoryIndex - 1
+                if currentCategoryIndex < 1 then
+                    currentCategoryIndex = #categories
+                end
+                currentEmoteIndex = 1  -- Reseta o índice de animação ao trocar de categoria
+                exports.scully_emotemenu:playEmoteByCommand(AnimationList[categories[currentCategoryIndex]][currentEmoteIndex].Command, nil, previewedNPC)
+                ChangeNPCModel(currentPedIndex)
+            end
+
+            -- Rolar para cima e para baixo para trocar o modelo de ped
+            if IsControlJustPressed(0, 241) then -- Scroll up
+                currentPedIndex = currentPedIndex + 1
+                if currentPedIndex > #PedModels then currentPedIndex = 1 end
+                ChangeNPCModel(currentPedIndex)
+            end
+
+            if IsControlJustPressed(0, 242) then -- Scroll down
+                currentPedIndex = currentPedIndex - 1
+                if currentPedIndex < 1 then currentPedIndex = #PedModels end
+                ChangeNPCModel(currentPedIndex)
+            end
+
+            -- Confirmar seleção do ped com E
+            if IsControlJustPressed(0, 38) then
+                local selectedPed = {
+                    hash = PedModels[currentPedIndex][2],
+                    coords = coords,
+                    heading = heading,
+                    -- Animação selecionada
+                    scullyEmote = AnimationList[categories[currentCategoryIndex]][currentEmoteIndex].Command
+                }
+                IsSelectingPed = false
+                lib.hideTextUI()
+
+                -- Chamar o callback para o menu com as informações selecionadas
+                if callback then
+                    callback(selectedPed)
+                end
+            end
+
+            -- Cancelar seleção com Q
+            if IsControlJustPressed(0, 44) then
+                IsSelectingPed = false
+                DeleteEntity(previewedNPC)
+                lib.hideTextUI()
+            end
+        end
+        Citizen.Wait(0)
+    end
+end
+
+
+
+
 function CreateNPC(model, stored)
     IsPlacingNPC = true
     lib.requestModel(model)
@@ -34,13 +195,6 @@ function CreateNPC(model, stored)
         '[E] Colocar NPC  \n [Q] Sair  \n [⬅/⮕] Girar Esquerda/Direita  ', {
             position = "right-center",
         })
-
-    -- lib.showTextUI([[
-    -- [E] - Colocar NPC
-    -- [Q] - Sair
-    -- [⇽] - Girar esquerda
-    -- [⇾] - Girar direita
-    -- ]])
     
     while IsPlacingNPC do
         local hit, _, coords, _, _ = lib.raycast.cam(1, 4)
@@ -74,6 +228,7 @@ function PlaceSpawnedNPC(coords, model, stored)
     lib.hideTextUI()
     IsPlacingNPC = false
     DeleteEntity(previewedNPC)
+    print("Placing NPC: ", model, coords, heading)
     TriggerServerEvent("insertData", coords, model, stored, heading)
 end
 
@@ -85,7 +240,6 @@ function CancelPlacement()
     IsPlacingNPC = false
     lib.hideTextUI()
 end
-
 
 function drawText3D(coords, text, scale2, r, g, b, a)
     local processedText = text:gsub("\\n", "\n")
