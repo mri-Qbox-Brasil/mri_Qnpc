@@ -86,11 +86,11 @@ AddEventHandler('onResourceStart', function(resourceName)
     end  
 end)
 
-AddEventHandler('onResourceStop', function(resourceName)
-    if GetCurrentResourceName() == resourceName then
-        npcTable = {}
-    end
-end)
+-- AddEventHandler('onResourceStop', function(resourceName)
+--     if GetCurrentResourceName() == resourceName then
+--         npcTable = {}
+--     end
+-- end)
 
 -- AddEventHandler("playerJoining", function(playerId, reason)
 --     LoadNPCData()
