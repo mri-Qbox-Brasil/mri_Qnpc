@@ -101,7 +101,7 @@ RegisterNetEvent("npcCreationOrEditMenu", function(menu, npc)
     local status = menu == "edit" or menu == "copy"
     local edit = menu == "edit" and true or false
     local copy = menu == "copy" and true or false
-    local npcRandomName = copy and string.format("%s copy_%s", npc.name, math.random(100, 999)) or npc.name
+    
     print(edit, json.encode(npc))
     for key, _ in pairs(keys) do
         table.insert(sortedKeys, key)
