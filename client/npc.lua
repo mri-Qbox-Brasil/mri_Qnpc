@@ -5,13 +5,18 @@ local drawString = {}
 local showText = false
 QBCore = exports['qb-core']:GetCoreObject()
 
-local function npcMenuList()
+
+RegisterNetEvent("createNPCMenu")
+AddEventHandler("createNPCMenu", function()
+    npcMenuList()
+end)
+function npcMenuList()
     local options = {
         {
             title = 'Criar novo NPC',
             icon = 'fa-solid fa-square-plus',
             onSelect = function()
-                TriggerEvent("npcCreationOrEditMenu", "new", "MeuNPC")
+                TriggerEvent("npcCreationOrEditMenu")
             end,
         }
     }
@@ -19,7 +24,7 @@ local function npcMenuList()
     options[#options + 1] = {
         title = 'Selecionar NPC',
         icon = 'arrows-up-down',
-        onSelect = function()
+        onSelect = function() 
             SelectPedModelForMenu(function(npc)
                 if npc then
                     TriggerEvent("npcCreationOrEditMenu", "edit", npc)
@@ -27,7 +32,7 @@ local function npcMenuList()
             end)
         end,
     }
-
+                
     -- uma linha separadora
     options[#options + 1] = {
         progress = 0
@@ -93,15 +98,13 @@ local function npcMenuList()
     lib.showContext('npc_create')
 end
 
-RegisterCommand("npc", function()
-    npcMenuList()
-end, false)
 
 RegisterNetEvent("npcCreationOrEditMenu", function(menu, npc)
-    local edit = menu == "edit"
-    local copy = menu == "copy"
-    local status = edit or copy
-
+    local status = menu == "edit" or menu == "copy"
+    local edit = menu == "edit" and true or false
+    local copy = menu == "copy" and true or false
+    local npcRandomName = "npc-"..math.random(1000, 9999)
+    print(edit, json.encode(npc))
     for key, _ in pairs(keys) do
         table.insert(sortedKeys, key)
     end
@@ -125,12 +128,12 @@ RegisterNetEvent("npcCreationOrEditMenu", function(menu, npc)
         {type = 'select', label = 'Tecla de Menu', options = keyOptions, searchable = true, description = 'A tecla para abrir o menu se drawText estiver ativado, deixe em branco para a tecla padrão [E]', default = status and npc.drawTextKey or ""},--11
         {type = 'input', label = 'Scully Emote', description = 'Insira o emote para o NPC (exemplo: weld). Deixe em branco para usar a Animação de cima.', default = status and npc.scullyEmote or ""},--12
     })
-
-    if not input then
+    
+    if not input then 
         if npc then CancelPlacement() end
-        return
+        return 
     end
-
+    
     local data = {
         name = input[1],
         hash = input[2],
@@ -160,7 +163,7 @@ RegisterNetEvent("npcCreationOrEditMenu", function(menu, npc)
     end
     -- print('passou do return')
     TriggerEvent("control:CreateEntity", data)
-end)
+end)    
 
 RegisterNetEvent("NPCresourceStart")
 AddEventHandler("NPCresourceStart", function(list)
@@ -168,7 +171,7 @@ AddEventHandler("NPCresourceStart", function(list)
     for _, npcData in ipairs(list) do
         if npcData.useDrawText then
             hasDrawText = true
-            drawString[#drawString + 1] = { label = npcData.oxTargetLabel, hash = npcData.hash }
+            drawString[#drawString + 1] = { label = npcData.oxTargetLabel, hash = npcData.hash } 
         end
 
         local npcIdentifier = npcData.name
@@ -223,20 +226,20 @@ AddEventHandler("NPCresourceStart", function(list)
                         local controlCode = keys[npcData.drawTextKey]
                         if #(pedC - vec3(npcData.coords.x, npcData.coords.y, npcData.coords.z)) <= 10 then
                             local hasJobAndGrade = false
-                            if QBX.PlayerData.job.name == npcData.job and QBX.PlayerData.job.grade >= tonumber(npcData.grade) then
+                            if QBX.PlayerData.job.name == npcData.job and QBX.PlayerData.job.grade >= tonumber(npcData.grade) then       
                                 hasJobAndGrade = true
                             end
 
                             local isPublic = npcData.job == false and tonumber(npcData.grade) == 0
                             local isRestricted = npcData.job ~= false and tonumber(npcData.grade) ~= 0
-
+                            
                             if isPublic or (isRestricted and hasJobAndGrade) then
                                 for i = 1, #drawString do
                                     if drawString[i].label == npcData.oxTargetLabel then
                                         drawText3D(vec3(npcData.coords.x, npcData.coords.y, npcData.coords.z + 1.2), drawString[i].label, 0.40)
                                     end
                                 end
-
+                                
                                 if #(pedC - vec3(npcData.coords.x, npcData.coords.y, npcData.coords.z)) <= 3 then
                                     if IsControlJustPressed(0, controlCode) then
                                         TriggerEvent(npcData.event)
@@ -307,7 +310,7 @@ function createNPC(modelHash, coords, heading, animDict, animName, scullyEmote)
         return nil
     end
     setupNPC(npc)
-
+    
     if scullyEmote and scullyEmote ~= "" then
         local emoteName, variation = scullyEmote:match("(%a+)(%d*)")
         variation = tonumber(variation) or 0
@@ -316,7 +319,7 @@ function createNPC(modelHash, coords, heading, animDict, animName, scullyEmote)
     elseif animDict and animDict ~= "" and animName and animName ~= "" then
         playAnimation(npc, animDict, animName)
     end
-
+    
     return npc
 end
 
