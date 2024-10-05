@@ -1,5 +1,12 @@
 local npcTable = {}
 
+lib.addCommand('npc', {
+    help = 'Abre o menu de criação de NPC',
+    restricted = 'group.admin'
+}, function(source, args, raw)
+    TriggerClientEvent('createNPCMenu', source)
+end)
+
 AddEventHandler("insertData")
 RegisterNetEvent("insertData", function(coords, model, data, heading)
     print("insertData", coords, model, data, heading)
