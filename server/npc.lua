@@ -4,7 +4,7 @@ lib.addCommand('npc', {
     help = 'Abre o menu de criação de NPC',
     restricted = 'group.admin'
 }, function(source, args, raw)
-    TriggerClientEvent('createNPCMenu', source)
+    lib.callback.await('mri_Qnpc:client:npcMenuList', source, false)
 end)
 
 AddEventHandler("insertData")
@@ -28,7 +28,8 @@ RegisterNetEvent("insertData", function(coords, model, data, heading)
                 oxTargetLabel = data.oxTargetLabel,
                 useDrawText = data.useDrawText,
                 drawTextKey = data.drawTextKey,
-                scullyEmote = data.scullyEmote
+                scullyEmote = data.scullyEmote,
+                npcDialog = data.npcDialog
             }
             return SaveNPCData()
         end
@@ -48,7 +49,8 @@ RegisterNetEvent("insertData", function(coords, model, data, heading)
         oxTargetLabel = data.oxTargetLabel,
         useDrawText = data.useDrawText,
         drawTextKey = data.drawTextKey,
-        scullyEmote = data.scullyEmote
+        scullyEmote = data.scullyEmote,
+        npcDialog = data.npcDialog
     })
     SaveNPCData()
 end)
