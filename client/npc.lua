@@ -117,28 +117,30 @@ function configureDialogTalk(npc, dialogIndex)
 	local dialog = npc.npcDialog[dialogIndex] or {}
 	local options = {}
 
-    -- Alterar Tag do NPC
-    options[#options + 1] = {
-        title = "Alterar Tag do NPC",
-        description = dialog.tag and ("Tag atual: %s"):format(dialog.tag) or "Tag atual: Nenhuma",
-        icon = "edit",
-        onSelect = function()
-            local input = lib.inputDialog("Alterar Tag do NPC", {
-                {
-                    type = "textarea",
-                    label = "Nova Tag",
-                    description = "Insira a nova tag do NPC.",
-                    default = dialog.tag or "",
-                },
-            })
-            if input then
-                dialog.tag = input[1] or dialog.tag
-                npc.npcDialog[dialogIndex] = dialog
-                PlaceSpawnedNPC(npc.coords, npc.hash, npc)
-            end
-            configureDialogTalk(npc, dialogIndex)
-        end,
-    }
+	if dialogIndex == 1 then
+		-- Alterar Tag do NPC
+		options[#options + 1] = {
+			title = "Alterar Tag do NPC",
+			description = dialog.tag and ("Tag atual: %s"):format(dialog.tag) or "Tag atual: Nenhuma",
+			icon = "edit",
+			onSelect = function()
+				local input = lib.inputDialog("Alterar Tag do NPC", {
+					{
+						type = "textarea",
+						label = "Nova Tag",
+						description = "Insira a nova tag do NPC.",
+						default = dialog.tag or "",
+					},
+				})
+				if input then
+					dialog.tag = input[1] or dialog.tag
+					npc.npcDialog[dialogIndex] = dialog
+					PlaceSpawnedNPC(npc.coords, npc.hash, npc)
+				end
+				configureDialogTalk(npc, dialogIndex)
+			end,
+		}
+	end
 
 	options[#options + 1] = {
 		title = "Alterar Fala do NPC",
@@ -354,81 +356,6 @@ function configureDialogAnswer(npc, dialogIndex, optIndex)
 	lib.showContext("suboption_menu_" .. dialogIndex .. "_" .. optIndex)
 end
 
-function openDialogSubmenuForSubOption(npc, dialogIndex, optIndex, subIndex)
-	local dialog = npc.npcDialog[dialogIndex]
-	local option = dialog.options[optIndex]
-	local subOption = option.subOptions[subIndex]
-
-	-- Opções para editar a subopção
-	local options = {
-		{
-			title = "Alterar Mensagem da Subopção",
-			icon = "edit",
-			onSelect = function()
-				local input = lib.inputDialog("Editar Subopção", {
-					{
-						type = "textarea",
-						label = "Texto da Subopção",
-						description = "Insira o novo texto da subopção.",
-						default = subOption.label,
-					},
-				})
-				if input then
-					subOption.label = input[1] or subOption.label
-					option.subOptions[subIndex] = subOption
-					dialog.options[optIndex] = option
-					npc.npcDialog[dialogIndex] = dialog
-					PlaceSpawnedNPC(npc.coords, npc.hash, npc)
-				end
-				-- Reabrir o mesmo submenu após a alteração
-				openDialogSubmenuForSubOption(npc, dialogIndex, optIndex, subIndex)
-			end,
-		},
-	}
-
-	-- Permitir adicionar mais subopções aninhadas (se necessário)
-	if subOption.subOptions and #subOption.subOptions < 4 or not subOption.subOptions then
-		options[#options + 1] = {
-			title = "Adicionar Nova Subopção",
-			icon = "fa-solid fa-plus",
-			onSelect = function()
-				local input = lib.inputDialog("Adicionar Nova Subopção", {
-					{
-						type = "textarea",
-						label = "Texto da Nova Subopção",
-						description = "Texto para a nova subopção.",
-					},
-				})
-				if input then
-					subOption.subOptions = subOption.subOptions or {}
-					table.insert(subOption.subOptions, {
-						label = input[1] or "Nova Subopção",
-						shouldClose = false,
-						action = function()
-							print("Ação para a nova subopção.")
-						end,
-					})
-					option.subOptions[subIndex] = subOption
-					dialog.options[optIndex] = option
-					npc.npcDialog[dialogIndex] = dialog
-					PlaceSpawnedNPC(npc.coords, npc.hash, npc)
-				end
-				-- Reabrir o mesmo submenu após adicionar nova subopção
-				openDialogSubmenuForSubOption(npc, dialogIndex, optIndex, subIndex)
-			end,
-		}
-	end
-
-	lib.registerContext({
-		id = "suboption_menu_" .. dialogIndex .. "_" .. optIndex .. "_" .. subIndex,
-		title = "Configurar 3º Grau - " .. subOption.label,
-		menu = "suboption_menu_" .. dialogIndex .. "_" .. optIndex,
-		options = options,
-	})
-
-	lib.showContext("suboption_menu_" .. dialogIndex .. "_" .. optIndex .. "_" .. subIndex)
-end
-
 function npcExists(npcIdentifier)
 	for _, existingNpc in ipairs(npcTable) do
 		if existingNpc.name == npcIdentifier then
@@ -469,7 +396,6 @@ function createNPC(modelHash, coords, heading, animDict, animName, scullyEmote)
 	if scullyEmote and scullyEmote ~= "" then
 		local emoteName, variation = scullyEmote:match("(%a+)(%d*)")
 		variation = tonumber(variation) or 0
-		print(emoteName, variation)
 		exports.scully_emotemenu:playEmoteByCommand(emoteName, variation, npc)
 	elseif animDict and animDict ~= "" and animName and animName ~= "" then
 		playAnimation(npc, animDict, animName)
@@ -531,7 +457,6 @@ RegisterNetEvent("npcCreationOrEditMenu", function(menu, npc, cb)
 	local edit = menu == "edit" and true or false
 	local copy = menu == "copy" and true or false
 	local npcRandomName = "npc-" .. math.random(1000, 9999)
-	print(edit, json.encode(npc))
 	for key, _ in pairs(keys) do
 		table.insert(sortedKeys, key)
 	end
@@ -670,48 +595,89 @@ RegisterNetEvent("NPCresourceStart", function(list)
 				end
 
 				local options = {}
+
 				for _, option in ipairs(npcData.npcDialog[1].options) do
-
-					-- Verifica se a ação é uma string e tenta restaurá-la como função
-
-                    if not option.interactionType or option.interactionType == "close" then
-                        option.action = function()
-                        end
-                        option.shouldClose = true
-                    elseif option.interactionType == "command" then
-                        option.action = function()
-                            ExecuteCommand(option.command)
-                        end
-                        option.shouldClose = true
-                    elseif option.interactionType == "dialog" then
-                        option.action = function()
-                            local options = {}
-                            exports['rep-talkNPC']:changeDialog(npcData.npcDialog[2].label, npcData.npcDialog[2].options)
-                        end
-                        option.shouldClose = false
-                    elseif option.interactionType == "location" then
-                        option.action = function()
-                            SetNewWaypoint(option.locations.x, option.locations.y)
-                        end
-                        option.shouldClose = true
-                    end
-
+					if not option.interactionType or option.interactionType == "close" then
+						option.action = function()
+						end
+						option.shouldClose = true
+					elseif option.interactionType == "command" then
+						option.action = function()
+							ExecuteCommand(option.command)
+						end
+						option.shouldClose = true
+					elseif option.interactionType == "dialog" then
+						option.action = function()
+							-- Obtém o próximo índice do diálogo
+							local currentDialogIndex = 1
+							local nextDialogIndex = currentDialogIndex + 1
+							local nextDialog = npcData.npcDialog[nextDialogIndex]
+				
+							if nextDialog then
+								local dialogOptions = {}
+								-- Adiciona opções do próximo diálogo
+								for _, subOption in ipairs(nextDialog.options or {}) do
+									local subAction = nil
+				
+									if subOption.interactionType == "command" then
+										subAction = function()
+											ExecuteCommand(subOption.command)
+										end
+									elseif subOption.interactionType == "dialog" then
+										subAction = function()
+											exports["rep-talkNPC"]:changeDialog(
+												nextDialog.label,
+												nextDialog.options
+											)
+										end
+									elseif subOption.interactionType == "location" then
+										subAction = function()
+											SetNewWaypoint(subOption.locations.x, subOption.locations.y)
+											lib.notify({ description = "Localização marcada no seu GPS.", type = 'success' })
+										end
+									else
+										subAction = function()
+										end
+									end
+				
+									dialogOptions[#dialogOptions + 1] = {
+										label = subOption.label,
+										shouldClose = subOption.interactionType == "close" or subOption.interactionType == "location",
+										action = subAction,
+									}
+								end
+				
+								-- Atualiza o diálogo para o próximo
+								exports["rep-talkNPC"]:changeDialog(nextDialog.label, dialogOptions)
+							else
+								print("Não há mais diálogos disponíveis.")
+							end
+						end
+						option.shouldClose = false
+					elseif option.interactionType == "location" then
+						option.action = function()
+							SetNewWaypoint(option.locations.x, option.locations.y)
+						end
+						option.shouldClose = true
+					end
+				
 					options[#options + 1] = {
 						label = option.label,
 						shouldClose = option.shouldClose,
 						action = option.action,
 					}
 				end
-
+				
 				local npc = exports["rep-talkNPC"]:CreateNPC({
 					npc = npcData.hash,
 					coords = npcData.coords,
+					heading = npcData.heading,
 					name = npcData.name,
 					startMSG = npcData.npcDialog[1].label, -- Mensagem inicial
 					tag = npcData.npcDialog[1].tag or "NPC",
 					color = "green.7",
 				}, options)
-
+				
 				if not npc then
 					print("Failed to create NPC:", npcData.hash)
 					goto continue
@@ -725,7 +691,6 @@ RegisterNetEvent("NPCresourceStart", function(list)
 				if npcData.scullyEmote and npcData.scullyEmote ~= "" then
 					local emoteName, variation = npcData.scullyEmote:match("(%a+)(%d*)")
 					variation = tonumber(variation) or 0
-					print(emoteName, variation)
 					exports.scully_emotemenu:playEmoteByCommand(emoteName, variation, npc)
 				elseif npcData.animDict and npcData.animDict ~= "" and npcData.animName and npcData.animName ~= "" then
 					playAnimation(npc, npcData.animDict, npcData.animName)
