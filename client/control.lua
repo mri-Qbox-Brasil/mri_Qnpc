@@ -65,7 +65,16 @@ function SelectPedModelForMenu(callback)
         -- Aplicar a animação ao NPC
         local category = categories[currentCategoryIndex]
         local selectedEmote = AnimationList[category][currentEmoteIndex]
-        exports.scully_emotemenu:playEmoteByCommand(selectedEmote.Command, nil, previewedNPC)
+        local function parseCommand(command)
+            local base, variation = command:match("^(%a+)(%d*)$")
+            variation = tonumber(variation) or 0
+            return base, variation
+        end
+        
+        local command = selectedEmote.Command or ""
+        local baseCommand, variation = parseCommand(command)
+        
+        exports.scully_emotemenu:playEmoteByCommand(baseCommand, variation, previewedNPC)
 
         -- Mostrar informações na tela
         lib.showTextUI(
